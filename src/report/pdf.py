@@ -17,7 +17,7 @@ class PDF(FPDF):
         self.set_y(-12)
         self.set_font("Helvetica", "", 8)
         self.set_text_color(150, 150, 150)
-        self.cell(0, 8, "Weyland-Yutani — Building Better Worlds", align="C")
+        self.cell(0, 8, "Weyland-Yutani - Building Better Worlds", align="C")
 
 
 def _hdr_row(pdf, headers, col_w):
@@ -122,7 +122,7 @@ def _params_line(pdf, params):
     pdf.cell(
         0, 5,
         f"IQR k={params['iqr_k']} | Z={params['z_thr']} | "
-        f"MA={params['ma_w']}d/{params['ma_pct']}% | α={params['alpha']}",
+        f"MA={params['ma_w']}d/{params['ma_pct']}% | a={params['alpha']}",
         new_x="LMARGIN", new_y="NEXT",
     )
     pdf.ln(3)
@@ -131,8 +131,8 @@ def _params_line(pdf, params):
 def _new_doc(df):
     doc = PDF()
     doc._subtitle = (
-        f"Extraction Report · {datetime.now():%Y-%m-%d %H:%M} · "
-        f"{df['Date'].min():%d.%m.%Y} – {df['Date'].max():%d.%m.%Y}"
+        f"Extraction Report - {datetime.now():%Y-%m-%d %H:%M} - "
+        f"{df['Date'].min():%d.%m.%Y} - {df['Date'].max():%d.%m.%Y}"
     )
     return doc
 
