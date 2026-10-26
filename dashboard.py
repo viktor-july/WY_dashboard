@@ -5,6 +5,7 @@ from src.analysis import stats
 from src.analysis.anomalies import detect_all
 from src.viz import chart
 from src.report import pdf
+from src.report.images import mine_chart, total_chart
 from src.ui import css, sidebar, kpis, anomalies_ui
 
 
@@ -27,10 +28,15 @@ def _init():
 
 def _try_load(url, gid):
     try:
-        st.session_state.df, st.session_state.mines = load(url, gid)
-        st.success(f"{len(st.session_state.df)} days · {len(st.session_state.mines)} mines")
+        df, mines = load(url, gid)
+        if df is None or df.empty or not mines:
+            st.error("Loaded 0 days / 0 mines. Check that the Data sheet is public and the GID is correct.")
+            return
+        st.session_state.df, st.session_state.mines = df, mines
+        st.success(f"Loaded {len(df)} days · {len(mines)} mines: {', '.join(mines[:4])}{'…' if len(mines)>4 else ''}")
     except Exception as e:
         st.error(str(e))
+        st.info("Tips: 1) Share sheet as Anyone with the link can view. 2) Open the Data tab and copy its gid= from the URL.")
 
 
 def _select_mines(mines):
@@ -74,23 +80,26 @@ def _raw(work, sel):
         st.dataframe(p, use_container_width=True, hide_index=True)
 
 
-def _make_imgs(fig1, fig2):
+def _make_imgs(work, sel):
     return [
-        (fig1.to_image(format="png", width=900, height=400, scale=1.5), "By mine"),
-        (fig2.to_image(format="png", width=900, height=400, scale=1.5), "Total"),
+        (mine_chart(work, sel), "By mine"),
+        (total_chart(work), "Total"),
     ]
 
 
-def _pdf_section(work, sel, st_map, anoms, fig1, fig2, params):
+def _pdf_section(work, sel, st_map, anoms, params):
     st.markdown('<div class="sec">Report</div>', unsafe_allow_html=True)
     if not st.button("Generate PDF", use_container_width=True):
         return
-    buf = pdf(work, sel, st_map, anoms, _make_imgs(fig1, fig2), params)
-    st.download_button(
-        "Download PDF", buf,
-        f"WY_Report_{datetime.now():%Y%m%d_%H%M}.pdf",
-        "application/pdf", use_container_width=True,
-    )
+    try:
+        buf = pdf(work, sel, st_map, anoms, _make_imgs(work, sel), params)
+        st.download_button(
+            "Download PDF", buf,
+            f"WY_Report_{datetime.now():%Y%m%d_%H%M}.pdf",
+            "application/pdf", use_container_width=True,
+        )
+    except Exception as e:
+        st.error(f"PDF failed: {e}")
 
 
 def _body(df, mines, params, kind, degree):
@@ -102,7 +111,7 @@ def _body(df, mines, params, kind, degree):
     fig1, fig2 = _show_charts(work, sel, anoms, kind, degree)
     anomalies_ui(cols, work, anoms)
     _raw(work, sel)
-    _pdf_section(work, sel, st_map, anoms, fig1, fig2, params)
+    _pdf_section(work, sel, st_map, anoms, params)
 
 
 def main():
